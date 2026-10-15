@@ -48,6 +48,10 @@
   --warn: #ffab00;
 }
 
+@layer base {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .grid > * { min-width: 0; }
+}
 .font-display { font-family: "Space Grotesk", sans-serif; }
 .text-brand { color: var(--brand); }
 .lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #616161; }

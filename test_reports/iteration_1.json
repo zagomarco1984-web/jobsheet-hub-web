@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only E2E testing of the Officina Lavori web app, which runs against the mobile app's live backend (job-sheet-hub-2). All requested flows work at 1920px: login (wrong-password error and success), logout, protected-route redirect, Home stats/folders/search, Customer page, Sheet page (summary, 6 phases plus toggles, DATI SCHEDA, labels and report PDFs both return 200 application/pdf, cutting navigation), Phase filter chips and step rows, Step page (timer-card, sessions-list, FOTO, COMPILAZIONE, action bar showing done/reopen for a completed step), Cutting page (summary, 22 rows table, 22 patterns), Scraps (filters, customer chips, empty-form validation toast, create TEST_MAT, detail /scrap/:id, delete), Operators (users-list, logo-settings, create and delete TEST_User), Excel upload (modal, file input, prefilled title, import), and Scan (garbage code toast, unknown sheet toast, valid OFFLAV|POS code opens the phase chooser). The one real bug: at 390px mobile width, /phase, /scraps and /operators scroll sideways.",
+  "backend_issues": {"critical": [], "minor": [
+    {"endpoint": "POST /api/sheets/upload (mobile backend)", "issue": "A random .xlsx with no curvature table is accepted. It creates a sheet under 'SENZA CLIENTE' with one phase called 'SHEET' and 1 step, instead of being rejected. This is the mobile backend's behaviour, not the web app's, but users can create junk sheets by mistake."}
+  ]},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Phase page steps grid (Phase.jsx line 80)", "issue": "At 390px the page scrolls sideways (scrollWidth 539 vs 390). The step rows stretch to 539px because the single-column grid has no explicit column template, so the long nowrap/truncate text sets the column width.", "selector": "[data-testid='steps-list']", "priority": "MEDIUM"},
+      {"component": "Scraps page (Scraps.jsx line 133 and the PageHeader right slot)", "issue": "At 390px the page scrolls sideways (scrollWidth 540). The scrap-section panel overflows for the same grid reason, and the header button group (settings + ETICHETTE QR + AGGIUNGI) uses shrink-0, so it overflows to 408px.", "selector": "[data-testid^='scrap-section-'], [data-testid='add-scrap-button']", "priority": "MEDIUM"},
+      {"component": "Operators page (Operators.jsx line 54)", "issue": "At 390px the page scrolls sideways (scrollWidth 497). users-list and logo-settings overflow because the grid's implicit auto column is sized to the long email text.", "selector": "[data-testid='users-list'], [data-testid='logo-settings']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Step page, mobile 390px", "issues": ["In the DATI CURVATURA 2-column grid, numbers break mid-value (e.g. '38.' / '1', '500' / '0') and labels are cut off. Use 1 column on mobile or add whitespace-nowrap to values."]},
+      {"screen": "Opening a deleted or non-existent sheet (/sheet/:id returning 404)", "issues": ["It stays on 'CARICAMENTO...' for about 7s because react-query's default retry (3x) also retries 404s. Set retry so it does not retry 4xx errors (index.js QueryClient)."]},
+      {"screen": "Toasts", "issues": ["The top-center sonner toast covers the central nav links in the top bar for a few seconds after each action (minor)."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix horizontal overflow at mobile width: add 'grid-cols-1' to the base grids in Phase.jsx:80, Scraps.jsx:133 and Operators.jsx:54 (and, as a precaution, Customer.jsx:39, Home.jsx:121/130, Cutting.jsx:114, Sheet.jsx:134, Step.jsx:137, Scan.jsx:77, Scrap.jsx:23), or add min-w-0 to the grid children.",
+    "In ui.jsx PageHeader, remove 'shrink-0' from the right-hand button container (or let it wrap / go full width on mobile) so the 3 buttons on the Scraps header don't overflow at 390px.",
+    "Step.jsx DATI CURVATURA: use 'grid-cols-1 sm:grid-cols-2' so values don't break mid-number on mobile.",
+    "index.js QueryClient: set retry: (count, err) => !/^Errore 4|non trovat/i.test(err.message) && count < 2 (or similar) so 404s show the error at once."
+  ],
+  "critical_code_review_comments": [
+    "The JWT is passed as ?token= in PDF/file/logo URLs (labelsUrl, reportUrl, fileUrl). The backend requires this for window.open, but the token ends up in browser history and server logs. Acceptable for an internal tool; consider short-lived signed URLs.",
+    "Scan.jsx Camera_ creates new window.BarcodeDetector without a try/catch; it is guarded by canScan, so this is fine.",
+    "UploadModal: when the import creates 0 sheets it shows toast.error ('Nessuna nuova scheda'), which is OK. When it creates 1 sheet it navigates straight to that sheet, but no success toast was seen in the test (it was likely already gone after the 6s wait). Not a bug."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "92% (every requested flow works; mobile overflow on 3 of 10 pages)"},
+  "seed_data_creation": "Created and then deleted: scrap TEST_MAT (id 6ad0add116c6d23ffdca2347, customer C.P.S. SRL), user TEST_User test_user_web@example.com, and sheet 'TEST_web_upload' (id 6ad0ae0f16c6d23ffdca2349, created by the Excel upload under SENZA CLIENTE). The API confirms all three now return 404 or are absent, and the sheet count is back to 68. No real records were modified (no timers, toggles, bar toggles or edits).",
+  "test_credentials": "admin@officina.it / Admin2026! (from /app/memory/test_credentials.md) works.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The web app calls REACT_APP_MOBILE_API_URL/api directly; the app's own FastAPI backend is unused. Real data: 68 sheets; customers C.P.S. SRL (63), CCT INOX (2), CMS SRL (3). Read-only sample: sheet 6acdc4f6b21bebb65d39ff4d (CMS C 001), phase ff63f317ca, done step 6acdc4f6b21bebb65d39ff4e. window.open PDF popups hang in headless; stub window.open and fetch the URL instead. Retest the mobile 390px overflow on /phase, /scraps and /operators (check document.documentElement.scrollWidth == 390)."
+}

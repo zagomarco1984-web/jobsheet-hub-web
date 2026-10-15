@@ -61,7 +61,7 @@ export const PageHeader = ({ title, subtitle, back, right }) => {
           <h1 className="page-title" data-testid="page-title">{title}</h1>
         </div>
       </div>
-      {right && <div className="flex flex-wrap gap-2 shrink-0">{right}</div>}
+      {right && <div className="flex flex-wrap gap-2">{right}</div>}
     </div>
   );
 };

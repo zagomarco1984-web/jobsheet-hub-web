@@ -140,7 +140,7 @@ export default function Step() {
           {ref.length > 0 && (
             <section className="panel" data-testid="bending-data">
               <h2 className="section-title mb-2">DATI CURVATURA</h2>
-              <div className="grid grid-cols-2 gap-x-6">
+              <div className="grid sm:grid-cols-2 gap-x-6">
                 {ref.map(([k, v]) => (
                   <div key={k} className="kv"><span className="lbl truncate">{k.toUpperCase()}</span><span className="kv-val">{v}</span></div>
                 ))}

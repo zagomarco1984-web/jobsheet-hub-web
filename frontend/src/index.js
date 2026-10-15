@@ -9,6 +9,7 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 60_000,
       refetchOnWindowFocus: false,
+      retry: (count, err) => count < 2 && !/^Errore 4|non trovat/i.test(err?.message ?? ""),
     },
   },
 });
