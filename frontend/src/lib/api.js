@@ -29,6 +29,9 @@ export async function api(path, opts = {}) {
     throw new Error("Connessione assente. Controlla la rete e riprova.");
   }
   if (res.status === 401 && path !== "/auth/login") onUnauthorized?.();
+  if (!res.ok && !(res.headers.get("content-type") ?? "").includes("json")) {
+    throw new Error("Server dell'app mobile non raggiungibile. Riattiva l'app mobile e riprova.");
+  }
   if (!res.ok) {
     let msg = `Errore ${res.status}`;
     try {
