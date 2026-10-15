@@ -21,9 +21,7 @@ export function AuthProvider({ children }) {
       if (getToken()) {
         try {
           setUser(await api("/auth/me"));
-        } catch {
-          setToken(null);
-        }
+        } catch {}
       }
       setReady(true);
     })();

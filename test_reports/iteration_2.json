@@ -1,0 +1,33 @@
+{
+  "summary": "Checked the fix for the login 404 error. The mobile backend (https://job-sheet-hub-2.preview.emergentagent.com) is STILL DOWN: POST /api/auth/login returns HTTP 404 'text/plain' '404 page not found', but the CORS headers are present (access-control-allow-origin: *), so the browser can read the response. On both frontend hosts (desktop 1920x1080 and mobile 390x844), login with admin@officina.it / Admin2026! now shows data-testid=login-error 'Server dell'app mobile non raggiungibile. Riattiva l'app mobile e riprova.' instead of 'Errore 404'. The empty-fields check ('Inserisci email e password') also works. The successful login, dashboard-stats and wrong-password ('Email o password non corretti') checks could NOT be run because the mobile backend is down.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "https://job-sheet-hub-2.preview.emergentagent.com/api/*", "issue": "The mobile app's backend is asleep and returns a plain-text 404 for every request. Nobody can log in until the mobile app is reactivated. This is outside the web app's codebase.", "priority": "CRITICAL"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Session bootstrap (auth.jsx)", "issue": "When the app starts, any failure of /auth/me (including the backend being down) calls setToken(null). Users get silently logged out whenever the mobile backend sleeps. It would be better to clear the token only on a 401.", "affected_selectors": []}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Tell the user to reactivate/wake the mobile app job-sheet-hub-2. The web code works, but the backend it calls is down.",
+    "Optional: in auth.jsx, clear the token only when /auth/me returns 401, not on network errors or a sleeping backend."
+  ],
+  "critical_code_review_comments": [
+    "api.js: any non-OK response that is not JSON is treated as 'server non raggiungibile'. That fits proxy/ingress 404/502/503 errors. FastAPI errors are JSON, so the backend's detail message is kept.",
+    "auth.jsx: the catch-all around /auth/me logs users out on transient errors."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (mobile backend down)", "frontend": "100% of the scenarios that could be tested (down-backend message, empty-field validation); success-path and wrong-password scenarios blocked"},
+  "test_credentials": "admin@officina.it / Admin2026! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "none",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "First curl POST https://job-sheet-hub-2.preview.emergentagent.com/api/auth/login. If it returns JSON, test a successful login leading to dashboard-stats, and a wrong password showing 'Email o password non corretti'. Shared real DB: do not modify data.",
+  "rca of the issue": "The user's 'Errore 404' came from the mobile backend's preview environment being asleep. The ingress returns a text/plain 404 for /api/*. Before the fix, api.js showed a generic 'Errore {status}'. Now non-JSON errors map to a clear Italian message. To fully fix it, the mobile app has to be woken up."
+}
